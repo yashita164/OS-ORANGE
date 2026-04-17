@@ -165,23 +165,37 @@ int index_load(Index *index) {
 //
 // Returns 0 on success, -1 on error.
 int index_save(const Index *index) {
-    FILE *f = fopen(INDEX_FILE, "w");
-    if (!f) return -1;
+    Index sorted = *index;
 
-    for (int i = 0; i < index->count; i++) {
-        char hex[HASH_HEX_SIZE + 1];
-        hash_to_hex(&index->entries[i].hash, hex);
-
-        fprintf(f, "%o %s %llu %u %s\n",
-                index->entries[i].mode,
-                hex,
-                (unsigned long long)index->entries[i].mtime_sec,
-                index->entries[i].size,
-                index->entries[i].path);
+    int cmp(const void *a, const void *b) {
+        return strcmp(((IndexEntry*)a)->path, ((IndexEntry*)b)->path);
     }
 
+    qsort(sorted.entries, sorted.count, sizeof(IndexEntry), cmp);
+
+    char tmp[256];
+    snprintf(tmp, sizeof(tmp), "%s.tmp", INDEX_FILE);
+
+    FILE *f = fopen(tmp, "w");
+    if (!f) return -1;
+
+    for (int i = 0; i < sorted.count; i++) {
+        char hex[HASH_HEX_SIZE + 1];
+        hash_to_hex(&sorted.entries[i].hash, hex);
+
+        fprintf(f, "%o %s %llu %u %s\n",
+                sorted.entries[i].mode,
+                hex,
+                (unsigned long long)sorted.entries[i].mtime_sec,
+                sorted.entries[i].size,
+                sorted.entries[i].path);
+    }
+
+    fflush(f);
+    fsync(fileno(f));
     fclose(f);
-    return 0;
+
+    return rename(tmp, INDEX_FILE);
 }// Stage a file for the next commit.
 //
 // HINTS - Useful functions and syscalls:
