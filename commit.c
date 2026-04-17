@@ -200,5 +200,12 @@ int commit_create(const char *message, ObjectID *commit_id_out) {
     // 1. Build tree from index
     if (tree_from_index(&c.tree) != 0) return -1;
 
+    // 2. Read HEAD as parent if exists
+    if (head_read(&c.parent) == 0) {
+        c.has_parent = 1;
+    } else {
+        c.has_parent = 0;
+    }
+
     return 0;
 }
