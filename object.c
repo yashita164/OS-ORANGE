@@ -94,13 +94,11 @@ int object_exists(const ObjectID *id) {
 //
 // Returns 0 on success, -1 on error.
 int object_write(ObjectType type, const void *data, size_t len, ObjectID *out) {
-    (void)type;
-    (void)data;
-    (void)len;
-    (void)out;
-    return -1;
-}
+    // 1. Compute hash
+    if (compute_hash(data, len, out) != 0) return -1;
 
+    return 0;
+}
 // Read an object from the store.
 //
 // Steps:
